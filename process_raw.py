@@ -6,7 +6,27 @@ import pandas as pd
 
 
 def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
-    return df.rename(columns=lambda col: col if col == "Month" else col.split(":")[0].strip())
+    """
+    Rename columns by stripping after ':' and handling duplicates by appending (n) to duplicates.
+    """
+    # Clean column names
+    cleaned = [col if col == "Month" else col.split(":")[0].strip() for col in df.columns]
+    # Handle duplicates
+    counts = {}
+    new_cols = []
+    for col in cleaned:
+        if col == "Month":
+            new_cols.append(col)
+            continue
+        if col not in counts:
+            counts[col] = 1
+            new_cols.append(col)
+        else:
+            counts[col] += 1
+            new_cols.append(f"{col}({counts[col]})")
+    df.columns = new_cols
+    return df
+
 
 def clean_col_name(col: str) -> str:
     return col if col == "Month" else col.split(":")[0].strip()
@@ -21,7 +41,7 @@ def merge_raw_data(csv_files):
     for i, fpath in enumerate(csv_files):
         df = pd.read_csv(fpath, skiprows=2, encoding="utf-8")
 
-        df.replace("<1", 0, inplace=True)
+        df.replace("<1", 0.5, inplace=True)
         df = rename_columns(df) 
         keyword_cols = [c for c in df.columns if c != "Month"]
         df[keyword_cols] = df[keyword_cols].apply(pd.to_numeric, errors="coerce")
@@ -62,7 +82,7 @@ def merge_ratio_linked_data(csv_files):
     combined_df = None
     for i, fpath in enumerate(csv_files):
         df = pd.read_csv(fpath, skiprows=2, encoding="utf-8")
-        df.replace("<1", 0, inplace=True)
+        df.replace("<1", 0.5, inplace=True)
         df = rename_columns(df)  
         keyword_cols = [c for c in df.columns if c != "Month"]
         df[keyword_cols] = df[keyword_cols].apply(pd.to_numeric, errors="coerce")
